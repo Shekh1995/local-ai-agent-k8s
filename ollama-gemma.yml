@@ -1,0 +1,46 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        lifecycle:
+          postStart:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5 && ollama pull gemma4:e4b"]
+        resources:
+          requests:
+            cpu: "3"
+            memory: "8Gi"
+          limits:
+            cpu: "3.5"
+            memory: "12Gi"
+        ports:
+        - containerPort: 11434
+          name: ollama-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-internal-svc
+  namespace: default
+spec:
+  selector:
+    app: ollama
+  ports:
+  - protocol: TCP
+    port: 11434
+    targetPort: 11434

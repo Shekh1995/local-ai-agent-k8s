@@ -1,0 +1,81 @@
+---
+- name: Create the zonal cluster
+  cmd: ./zonal-cluster.sh
+  explaination: |
+    The script contains the command to create the one zone cluster
+
+- name: get credentials for the cluster for shell
+  cmd: gcloud container clusters get-credentials [your-cluster-name] --zone=[your zone]
+  explaination: | 
+    It copies kubeconfig to your home directory so that you can run the kubectl commands
+
+- name: Deploy the Ollama on the cluster
+  cmd: kubectl apply -f ollama-gemma.yml
+  explaination: |
+    It downloads latest ollama model for agent to run locally
+  Also it downloads the latest gemma4:e4b trained model to run in the cluster
+
+- name: Create the secret for Agent
+  cmd: |
+    kubectl create secret generic kagent-openai \
+  --namespace kagent \
+  --from-literal=OPENAI_API_KEY="dummy-key" \
+  --dry-run=client -o yaml | kubectl apply -f -
+  explaination: |
+    The engine looks for the native K8s secret with internal datakey, so we are providing explicitly, "dummy-key"
+
+- name: Creating the model config
+  cmd: kubectl apply -f model-config.yml
+  explaination: |
+    Helping kagent to track the OPENAI_API_KEY
+
+- name: Installing the schema CRDs with helm
+  cmd: |
+    helm upgrade --install kagent-crds oci://ghcr.io/kagent-dev/kagent/helm/kagent-crds \
+  --namespace kagent \
+  --create-namespace
+  explaination: |
+    It creates the namespace kagent
+    CRD to be read from google
+
+- name: Deploy the kagent
+  cmd: |
+    helm install kagent oci://ghcr.io/kagent-dev/kagent/helm/kagent \
+  --namespace kagent \
+  --set postgresql.enabled=true \
+  --set providers.default=openai \
+  --set providers.openai.model="gemma4:e4b" \
+  --set providers.openai.apiKey="dummy-key" \
+  --set providers.openai.baseUrl="http://ollama-internal-svc.default.svc.cluster.local:11434/v1"
+
+- name: Verify Ollama server modle
+  cmd: kubectl exec -it deployment/ollama-service -- ollama list
+  explaination: |
+    It will show the Ollama server running the model gemma4 or not
+
+- name: Creating the tunnel for the localhost
+  cmd: kubectl -n kagent port-forward service/kagent-ui 8080:8080 &
+  explaination: |
+    it creates the tunnel by port forwarding the kagent-ui running on port 8080 to localhost port 8080
+
+- name: Access the kagent-ui 
+  url: http://localhost:8080
+
+- name: Follow and create the New agent
+  steps: 
+  - Click Let's Get Started in the welcome wizard.
+  - Walk through the wizard screen by screen to set up your first agent. 
+    - Step 1: Configure AI Model: Choose an existing model such as gpt-4.1-mini.
+    - Step 2: Set up the AI Agent: Review the default details for a basic Kubernetes agent.
+    - Step 3: Select Tools: Review the preselected tools for your first agent.
+    - Step 4: Review Agent Configuration: Review the details of your selections, then click Create kagent/nitesh-k8s-agent & Finish.
+    - Step 5: You created your first agent. You can share your success, or click Finish & Go to Agent.
+    - Step 6: From the kagent UI landing page, find your kagent/nitesh-k8s-agent agent. You might have to refresh the page.
+    - Step 7: Click your agent, then enter a message such as "Hello! Tell me a one-sentence joke." OR "What API resources are running in my cluster?", and click Send. The agent uses the available tools as shown in the to help answer the question.
+    - Step 8: Click around to explore the UI some more.
+
+
+
+
+
+

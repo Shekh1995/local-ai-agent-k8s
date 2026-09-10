@@ -1,0 +1,13 @@
+---
+apiVersion: kagent.dev/v1alpha2
+kind: ModelConfig
+metadata:
+  name: default-model-config
+  namespace: kagent
+spec:
+  provider: OpenAI
+  model: "gemma4:e4b"
+  apiKeySecret: "kagent-openai"
+  apiKeySecretKey: "OPENAI_API_KEY"
+  openAI:
+    baseUrl: "http://ollama-internal-svc.default.svc.cluster.local:11434/v1"
