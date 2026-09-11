@@ -1,7 +1,7 @@
 # Define targeted variables
 export PROJECT_ID=$(gcloud config get-value project)
 export CLUSTER_NAME=vllm-zonal-cluster
-export ZONE=europe-north1
+export ZONE=europe-north1-a
 
 # Create the cluster explicitly inside us-central1-a
 gcloud container clusters create $CLUSTER_NAME \
